@@ -59,7 +59,11 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
+// Export the Express app for Vercel serverless deployment
+export { app };
+
+// Async function to initialize the application
+export async function initializeApp() {
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -80,6 +84,13 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
+  return app;
+}
+
+// Local development: initialize and start the server
+(async () => {
+  await initializeApp();
+
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
@@ -95,3 +106,4 @@ app.use((req, res, next) => {
     },
   );
 })();
+
