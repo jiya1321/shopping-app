@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Filter, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { formatINR } from "@/lib/currency";
 
 export default function Shop() {
   const [location] = useLocation();
@@ -18,7 +19,7 @@ export default function Shop() {
   const searchParam = searchParams.get("search");
 
   const [filteredProducts, setFilteredProducts] = useState(products);
-  const [priceRange, setPriceRange] = useState([0, 3000]);
+  const [priceRange, setPriceRange] = useState([0, 200000]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const allCategories = Array.from(new Set(products.map(p => p.category)));
@@ -87,16 +88,16 @@ export default function Shop() {
         <h3 className="font-semibold mb-4 text-lg">Price Range</h3>
         <div className="px-2">
           <Slider
-            defaultValue={[0, 3000]}
-            max={3000}
-            step={100}
+            defaultValue={[0, 200000]}
+            max={200000}
+            step={1000}
             value={priceRange}
             onValueChange={setPriceRange}
             className="mb-4"
           />
           <div className="flex justify-between text-sm text-gray-600">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}</span>
+            <span>{formatINR(priceRange[0])}</span>
+            <span>{formatINR(priceRange[1])}</span>
           </div>
         </div>
       </div>
@@ -150,7 +151,7 @@ export default function Shop() {
               <div className="text-center py-20 bg-white rounded-lg">
                 <h3 className="text-xl font-medium text-gray-900 mb-2">No products found</h3>
                 <p className="text-gray-500 mb-6">Try adjusting your filters or search query.</p>
-                <Button onClick={() => {setSelectedCategories([]); setPriceRange([0, 3000]); window.history.pushState({}, '', '/shop');}}>
+                  <Button onClick={() => {setSelectedCategories([]); setPriceRange([0, 200000]); window.history.pushState({}, '', '/shop');}}>
                   Clear Filters
                 </Button>
               </div>

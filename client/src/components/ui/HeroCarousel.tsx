@@ -8,7 +8,7 @@ const slides = [
   {
     id: 1,
     title: "Next Gen Smartphones",
-    subtitle: "Upgrade to the future today. Experience AI power.",
+    subtitle: "Upgrade today with free delivery across India and secure UPI payments.",
     image: heroImage,
     cta: "Shop Mobiles",
     link: "/shop?category=Mobiles",
@@ -17,7 +17,7 @@ const slides = [
   {
     id: 2,
     title: "Professional Laptops",
-    subtitle: "Power your productivity with M3 chips.",
+    subtitle: "Power your productivity with bank offers and no-cost EMI.",
     image: heroImage, // Reusing for now, in real app would use specific slide
     cta: "Shop Laptops",
     link: "/shop?category=Laptops",
@@ -26,7 +26,7 @@ const slides = [
   {
     id: 3,
     title: "Home Automation",
-    subtitle: "Smart appliances for a smarter home.",
+    subtitle: "Smart appliances with Cash on Delivery and easy returns.",
     image: heroImage, 
     cta: "Explore Appliances",
     link: "/shop?category=Home Appliances",

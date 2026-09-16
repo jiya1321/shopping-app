@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/context/CartContext";
 import { Star, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
+import { formatINR } from "@/lib/currency";
 
 interface ProductCardProps {
   product: Product;
@@ -40,7 +41,7 @@ export function ProductCard({ product }: ProductCardProps) {
               BESTSELLER
             </span>
           )}
-          <img 
+              <img 
             src={product.image} 
             alt={product.name} 
             className="object-contain w-full h-full transition-transform duration-500 group-hover:scale-110"
@@ -68,9 +69,12 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
           
           <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-gray-900">${product.price}</span>
+            <span className="text-lg font-bold text-gray-900">{formatINR(product.price)}</span>
             {product.originalPrice && (
-              <span className="text-xs text-gray-500 line-through">${product.originalPrice}</span>
+              <>
+                <span className="text-xs text-gray-500 line-through">{formatINR(product.originalPrice)}</span>
+                <span className="text-xs font-semibold text-green-600">{Math.round((1 - product.price / product.originalPrice) * 100)}% off</span>
+              </>
             )}
           </div>
         </CardContent>

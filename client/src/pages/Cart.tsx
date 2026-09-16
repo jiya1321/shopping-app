@@ -1,12 +1,26 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { formatINR } from "@/lib/currency";
 
 export default function Cart() {
   const { items, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
+  const { isLoggedIn, setRedirectAfterLogin } = useAuth();
+  const [, setLocation] = useLocation();
+
+  const handleProceedToCheckout = () => {
+    if (!isLoggedIn) {
+      setRedirectAfterLogin("/checkout");
+      // Trigger auth dialog by dispatching custom event
+      window.dispatchEvent(new CustomEvent('open-auth-dialog'));
+    } else {
+      setLocation("/checkout");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -67,7 +81,7 @@ export default function Cart() {
                           </h3>
                           <p className="mt-1 text-sm text-gray-500">{item.category}</p>
                         </div>
-                        <div className="mt-2 text-sm font-bold text-gray-900">${item.price}</div>
+                        <div className="mt-2 text-sm font-bold text-gray-900">{formatINR(item.price)}</div>
                       </div>
 
                       <div className="flex items-center gap-4 mt-4 sm:mt-0">
@@ -109,29 +123,31 @@ export default function Cart() {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
-                    <span>${cartTotal.toFixed(2)}</span>
+                    <span>{formatINR(cartTotal)}</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Shipping</span>
-                    <span className="text-green-600">Free</span>
+                    <span className="text-green-600">FREE delivery</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
-                    <span>Tax (Estimated)</span>
-                    <span>${(cartTotal * 0.08).toFixed(2)}</span>
+                    <span>GST (included)</span>
+                    <span>{formatINR(0)}</span>
                   </div>
                   
                   <div className="border-t pt-3 mt-3 flex justify-between font-bold text-lg text-gray-900">
                     <span>Total</span>
-                    <span>${(cartTotal * 1.08).toFixed(2)}</span>
+                    <span>{formatINR(cartTotal)}</span>
                   </div>
                 </div>
 
-                <Button size="lg" className="w-full bg-secondary text-primary font-bold hover:bg-secondary/90">
+                <Button size="lg" className="w-full bg-secondary text-primary font-bold hover:bg-secondary/90" onClick={handleProceedToCheckout}>
                   Proceed to Checkout
                 </Button>
                 
                 <div className="mt-4 text-xs text-center text-gray-500">
-                  <p>Secure Checkout - 256-bit SSL Encryption</p>
+                  <p>Secure Payments | UPI | Cash on Delivery</p>
+                  <p className="mt-1">Credit Card | Debit Card | Net Banking | Wallets</p>
+                  <p className="mt-1">No-cost EMI available on eligible products</p>
                 </div>
               </div>
             </div>

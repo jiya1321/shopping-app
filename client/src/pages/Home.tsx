@@ -10,6 +10,7 @@ import { ArrowRight } from "lucide-react";
 export default function Home() {
   const trendingProducts = products.filter(p => p.isBestSeller || p.isNew).slice(0, 4);
   const dealProducts = products.slice(4, 8);
+  const offerProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -22,7 +23,7 @@ export default function Home() {
         <section className="container mx-auto px-4 md:px-6 py-8 -mt-12 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {categories.map((cat) => (
-              <Link key={cat.name} href={`/shop?category=${cat.name}`}>
+              <Link key={cat.name} href={`/products/${cat.name.toLowerCase().replaceAll(" ", "-")}`}>
                 <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer flex flex-col items-center text-center h-full">
                   <h3 className="font-bold text-lg mb-2 text-primary">{cat.name}</h3>
                   <div className="flex-1 flex items-center justify-center w-full h-32 mb-4">
@@ -35,11 +36,26 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Latest Offers Section */}
+        <section className="container mx-auto px-4 md:px-6 py-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">🔥 Latest Offers</h2>
+            <Link href="/products">
+              <Button variant="link" className="text-blue-600">View All Offers <ArrowRight className="ml-1 w-4 h-4" /></Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+            {offerProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+
         {/* Trending Section */}
         <section className="container mx-auto px-4 md:px-6 py-12">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Trending Now</h2>
-            <Link href="/shop">
+            <Link href="/products">
               <Button variant="link" className="text-blue-600">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
             </Link>
           </div>
@@ -53,9 +69,9 @@ export default function Home() {
         {/* Banner/Ad Section */}
         <section className="w-full bg-primary py-16 my-8">
           <div className="container mx-auto px-4 md:px-6 text-center text-white">
-            <h2 className="text-3xl md:text-5xl font-bold mb-4">Big Sale on Home Appliances</h2>
-            <p className="text-xl mb-8 text-gray-300">Up to 40% off on selected items. Limited time offer.</p>
-            <Link href="/shop?category=Home Appliances">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">Great Indian Festival Offers</h2>
+            <p className="text-xl mb-8 text-gray-300">Big savings on electronics with bank offers and no-cost EMI.</p>
+            <Link href="/products">
               <Button size="lg" className="bg-secondary text-primary font-bold hover:bg-secondary/90 rounded-full px-8">
                 Check Deals
               </Button>
@@ -67,7 +83,7 @@ export default function Home() {
         <section className="container mx-auto px-4 md:px-6 py-12 pb-20">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800">Top Deals</h2>
-            <Link href="/shop">
+            <Link href="/products">
               <Button variant="link" className="text-blue-600">View All <ArrowRight className="ml-1 w-4 h-4" /></Button>
             </Link>
           </div>

@@ -12,7 +12,7 @@ export function Footer() {
               <span className="text-secondary">Krishna</span>Electronics
             </h3>
             <p className="text-sm text-gray-400">
-              Your one-stop destination for premium electronics. We bring the latest technology to your doorstep with unbeatable prices and service.
+              Your trusted Indian destination for premium electronics, great Indian festival offers, and dependable service.
             </p>
             <div className="flex gap-4 pt-2">
               <a href="#" className="hover:text-secondary transition-colors"><Facebook size={20} /></a>
@@ -28,7 +28,6 @@ export function Footer() {
               <li><Link href="/" className="hover:text-secondary transition-colors">Home</Link></li>
               <li><Link href="/shop" className="hover:text-secondary transition-colors">Shop All</Link></li>
               <li><Link href="/cart" className="hover:text-secondary transition-colors">My Cart</Link></li>
-              <li><Link href="/about" className="hover:text-secondary transition-colors">About Us</Link></li>
               <li><Link href="/contact" className="hover:text-secondary transition-colors">Contact Us</Link></li>
             </ul>
           </div>
@@ -46,26 +45,27 @@ export function Footer() {
 
           {/* Contact Info */}
           <div>
-            <h4 className="text-white font-semibold mb-4">Contact Us</h4>
+            <h4 className="text-white font-semibold mb-4">Customer Care</h4>
             <ul className="space-y-3 text-sm">
               <li className="flex items-start gap-2">
                 <MapPin size={16} className="mt-1 text-secondary" />
-                <span>123 Tech Street, Silicon Valley<br />CA 94000, USA</span>
+                <span>Krishna Electronics<br />Shop No. 182, Dashmesh Market<br />Balongi</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone size={16} className="text-secondary" />
-                <span>+1 (555) 123-4567</span>
+                <span>+91 98141 93459</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail size={16} className="text-secondary" />
-                <span>support@krishnaelectronics.com</span>
+                <a href="mailto:krishnaelectronics459@gmail.com">krishnaelectronics459@gmail.com</a>
               </li>
+              <li className="text-xs text-gray-400">Mon-Sat, 9 AM-6 PM</li>
             </ul>
           </div>
         </div>
         
         <div className="border-t border-slate-800 pt-6 text-center text-xs text-gray-500">
-          <p>&copy; {new Date().getFullYear()} Krishna Electronics. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Krishna Electronics. GST included in price. Easy Returns.</p>
         </div>
       </div>
     </footer>

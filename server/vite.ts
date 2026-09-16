@@ -1,4 +1,5 @@
 import { type Express } from "express";
+import express from "express";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
@@ -30,6 +31,9 @@ export async function setupVite(server: Server, app: Express) {
   });
 
   app.use(vite.middlewares);
+
+  // Serve attached_assets as static files
+  app.use("/attached_assets", express.static(path.resolve(import.meta.dirname, "..", "attached_assets")));
 
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
