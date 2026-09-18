@@ -13,8 +13,12 @@ export function serveStatic(app: Express) {
     path.resolve(process.cwd(), "public"),
     path.resolve(__dirname, "..", "dist", "public"),
     path.resolve(__dirname, "..", "public"),
+    path.resolve(__dirname, "dist", "public"),
+    path.resolve(__dirname, "public"),
     path.resolve("/var/task", "dist", "public"),
     path.resolve("/var/task", "public"),
+    path.resolve(".", "dist", "public"),
+    path.resolve(".", "public"),
   ];
   
   let validPath: string | null = null;
@@ -32,7 +36,11 @@ export function serveStatic(app: Express) {
     // Log current working directory and __dirname for debugging
     console.log(`Current working directory: ${process.cwd()}`);
     console.log(`__dirname: ${__dirname}`);
-    console.log(`Files in current directory: ${fs.readdirSync(process.cwd()).join(', ')}`);
+    try {
+      console.log(`Files in current directory: ${fs.readdirSync(process.cwd()).join(', ')}`);
+    } catch (e) {
+      console.log(`Could not read current directory: ${(e as Error).message}`);
+    }
     
     throw new Error(
       `Could not find the build directory. Tried: ${possiblePaths.join(', ')}. Make sure to build the client first.`,

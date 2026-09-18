@@ -8,7 +8,7 @@
       "src": "api/index.cjs",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["api/server.cjs", "dist/public/**", "dist/public/attached_assets/**"]
+        "includeFiles": ["api/server.cjs", "dist/**", "attached_assets/**"]
       }
     }
   ],
