@@ -8,20 +8,40 @@ export function serveStatic(app: Express) {
   // On Vercel, dist/** files are included at the function root via vercel.json
   const distPath = path.resolve(process.cwd(), "dist", "public");
   
-  if (!fs.existsSync(distPath)) {
+  // Try multiple possible paths for Vercel deployment
+  const possiblePaths = [
+    distPath,
+    path.resolve(process.cwd(), "public"),
+    path.resolve("/var/task", "dist", "public"),
+    path.resolve("/var/task", "public"),
+  ];
+  
+  let validPath: string | null = null;
+  for (const testPath of possiblePaths) {
+    if (fs.existsSync(testPath)) {
+      validPath = testPath;
+      console.log(`Found build directory at: ${testPath}`);
+      break;
+    }
+  }
+  
+  if (!validPath) {
+    console.error(`Could not find build directory. Tried: ${possiblePaths.join(', ')}`);
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory. Tried: ${possiblePaths.join(', ')}. Make sure to build the client first.`,
     );
   }
 
-  app.use(express.static(distPath));
+  app.use(express.static(validPath));
 
   // Serve attached_assets as static files
   const assetsPath = path.resolve(process.cwd(), "attached_assets");
-  app.use("/attached_assets", express.static(assetsPath));
+  if (fs.existsSync(assetsPath)) {
+    app.use("/attached_assets", express.static(assetsPath));
+  }
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+    res.sendFile(path.resolve(validPath, "index.html"));
   });
 }
