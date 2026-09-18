@@ -1,6 +1,6 @@
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
-import { rm, readFile } from "fs/promises";
+import { rm, readFile, copyFile, cp } from "fs/promises";
 
 // server deps to bundle to reduce openat(2) syscalls
 // which helps cold start times
@@ -38,6 +38,9 @@ async function buildAll() {
   console.log("building client...");
   await viteBuild();
 
+  console.log("copying attached_assets to dist/public/attached_assets...");
+  await cp("attached_assets", "dist/public/attached_assets", { recursive: true });
+
   console.log("building server...");
   const pkg = JSON.parse(await readFile("package.json", "utf-8"));
   const allDeps = [
@@ -54,11 +57,16 @@ async function buildAll() {
     outfile: "dist/index.cjs",
     define: {
       "process.env.NODE_ENV": '"production"',
+      "process.env.VERCEL": '"true"',
     },
     minify: true,
     external: externals,
     logLevel: "info",
   });
+
+  // Copy dist/index.cjs to api/index.cjs for Vercel deployment
+  console.log("copying server bundle to api folder...");
+  await copyFile("dist/index.cjs", "api/server.cjs");
 }
 
 buildAll().catch((err) => {

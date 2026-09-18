@@ -1,4 +1,4 @@
-const serverModule = require("../dist/index.cjs");
+const serverModule = require('./server.cjs');
 
 const { initializeApp, app } = serverModule;
 

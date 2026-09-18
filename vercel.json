@@ -1,22 +1,24 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
   "functions": {
     "api/index.cjs": {
-      "includeFiles": [
-        "dist/index.cjs",
-        "dist/public/**"
-      ]
+      "includeFiles": "api/server.cjs"
     }
   },
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/index.cjs"
+      "src": "/api(?:/(.*))?",
+      "dest": "/api/index.cjs"
     },
     {
-      "source": "/(.*)",
-      "destination": "/api/index.cjs"
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
     }
   ]
 }
