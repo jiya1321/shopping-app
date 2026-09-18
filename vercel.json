@@ -6,7 +6,10 @@
   "builds": [
     {
       "src": "api/index.cjs",
-      "use": "@vercel/node"
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["api/server.cjs", "dist/public/**"]
+      }
     }
   ],
   "routes": [
@@ -15,8 +18,16 @@
       "dest": "/api/index.cjs"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/dist/public/assets/$1"
+    },
+    {
+      "src": "/attached_assets/(.*)",
+      "dest": "/dist/public/attached_assets/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/dist/public/$1"
+      "dest": "/api/index.cjs"
     }
   ]
 }
