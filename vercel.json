@@ -3,17 +3,19 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/index.cjs": {
-      "runtime": "nodejs20.x",
-      "includeFiles": "dist/**",
-      "maxDuration": 10
-    }
-  },
-  "rewrites": [
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/api/index.cjs"
+      "src": "api/index.cjs",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["api/server.cjs", "dist/**"]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.cjs"
     }
   ]
 }
