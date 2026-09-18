@@ -7,6 +7,30 @@ export function serveStatic(app: Express) {
   // In local development, it's served by Vite
   // On Vercel, dist/** files are included at the function root via vercel.json
   
+  console.log(`Starting static file serving...`);
+  console.log(`Current working directory: ${process.cwd()}`);
+  console.log(`__dirname: ${__dirname}`);
+  
+  // List all files in current directory for debugging
+  try {
+    const files = fs.readdirSync(process.cwd());
+    console.log(`Files in current directory: ${files.join(', ')}`);
+    
+    // Check if dist directory exists and list its contents
+    if (files.includes('dist')) {
+      const distFiles = fs.readdirSync(path.join(process.cwd(), 'dist'));
+      console.log(`Files in dist directory: ${distFiles.join(', ')}`);
+      
+      // Check if public exists in dist
+      if (distFiles.includes('public')) {
+        const publicFiles = fs.readdirSync(path.join(process.cwd(), 'dist', 'public'));
+        console.log(`Files in dist/public directory: ${publicFiles.join(', ')}`);
+      }
+    }
+  } catch (e) {
+    console.log(`Error listing directories: ${(e as Error).message}`);
+  }
+  
   // Try multiple possible paths for Vercel deployment
   const possiblePaths = [
     path.resolve(process.cwd(), "dist", "public"),
@@ -33,14 +57,6 @@ export function serveStatic(app: Express) {
   
   if (!validPath) {
     console.error(`Could not find build directory. Tried: ${possiblePaths.join(', ')}`);
-    // Log current working directory and __dirname for debugging
-    console.log(`Current working directory: ${process.cwd()}`);
-    console.log(`__dirname: ${__dirname}`);
-    try {
-      console.log(`Files in current directory: ${fs.readdirSync(process.cwd()).join(', ')}`);
-    } catch (e) {
-      console.log(`Could not read current directory: ${(e as Error).message}`);
-    }
     
     throw new Error(
       `Could not find the build directory. Tried: ${possiblePaths.join(', ')}. Make sure to build the client first.`,
