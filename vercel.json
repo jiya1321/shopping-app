@@ -3,31 +3,14 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.cjs",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["api/server.cjs", "dist/public/**"]
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/api/index.cjs"
+      "source": "/api/:path*",
+      "destination": "/api/index.cjs"
     },
     {
-      "src": "/assets/(.*)",
-      "dest": "/dist/public/assets/$1"
-    },
-    {
-      "src": "/attached_assets/(.*)",
-      "dest": "/dist/public/attached_assets/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/api/index.cjs"
+      "source": "/(.*)",
+      "destination": "/dist/public/$1"
     }
   ]
 }
