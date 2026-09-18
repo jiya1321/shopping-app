@@ -3,22 +3,19 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/index.cjs": {
-      "includeFiles": "api/server.cjs"
+  "builds": [
+    {
+      "src": "api/index.cjs",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["api/server.cjs", "dist/**"]
+      }
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/api(?:/(.*))?",
-      "dest": "/api/index.cjs"
-    },
-    {
-      "handle": "filesystem"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/api/index.cjs"
     }
   ]
 }
