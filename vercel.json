@@ -5,12 +5,12 @@
   "outputDirectory": "dist/public",
   "rewrites": [
     {
-      "source": "/api/:path*",
-      "destination": "/api/index.cjs"
+      "source": "/api/(.*)",
+      "destination": "/api/index"
     },
     {
-      "source": "/(.*)",
-      "destination": "/dist/public/$1"
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }

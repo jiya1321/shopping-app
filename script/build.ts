@@ -66,7 +66,7 @@ async function buildAll() {
 
   // Copy dist/index.cjs to api/index.cjs for Vercel deployment
   console.log("copying server bundle to api folder...");
-  await copyFile("dist/index.cjs", "api/server.cjs");
+  await copyFile("dist/index.cjs", "api/_server.cjs");
 }
 
 buildAll().catch((err) => {

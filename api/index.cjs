@@ -1,5 +1,5 @@
 try {
-  const serverModule = require('./server.cjs');
+  const serverModule = require('./_server.cjs');
   
   if (typeof serverModule.initializeApp !== 'function' || typeof serverModule.app !== 'function') {
     throw new Error('Server module does not export required functions');
