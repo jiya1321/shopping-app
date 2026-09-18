@@ -3,80 +3,35 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  // In production/Vercel, the build output is in dist/public
-  // In local development, it's served by Vite
-  // On Vercel, dist/** files are included at the function root via vercel.json
+  // In production/Vercel, static files are served directly by Vercel's CDN
+  // The serverless function only handles API routes
+  // In local development, we serve the files with Vite
   
-  console.log(`Starting static file serving...`);
-  console.log(`Current working directory: ${process.cwd()}`);
-  console.log(`__dirname: ${__dirname}`);
+  console.log(`Static file serving skipped for Vercel deployment`);
+  console.log(`API routes will be handled by the serverless function`);
+  console.log(`Static files will be served by Vercel's CDN`);
   
-  // List all files in current directory for debugging
-  try {
-    const files = fs.readdirSync(process.cwd());
-    console.log(`Files in current directory: ${files.join(', ')}`);
+  // Only serve static files in local development
+  if (process.env.NODE_ENV !== "production" || !process.env.VERCEL) {
+    const distPath = path.resolve(process.cwd(), "dist", "public");
     
-    // Check if dist directory exists and list its contents
-    if (files.includes('dist')) {
-      const distFiles = fs.readdirSync(path.join(process.cwd(), 'dist'));
-      console.log(`Files in dist directory: ${distFiles.join(', ')}`);
-      
-      // Check if public exists in dist
-      if (distFiles.includes('public')) {
-        const publicFiles = fs.readdirSync(path.join(process.cwd(), 'dist', 'public'));
-        console.log(`Files in dist/public directory: ${publicFiles.join(', ')}`);
-      }
+    if (!fs.existsSync(distPath)) {
+      throw new Error(
+        `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      );
     }
-  } catch (e) {
-    console.log(`Error listing directories: ${(e as Error).message}`);
-  }
-  
-  // Try multiple possible paths for Vercel deployment
-  const possiblePaths = [
-    path.resolve(process.cwd(), "dist", "public"),
-    path.resolve(process.cwd(), "public"),
-    path.resolve(__dirname, "..", "dist", "public"),
-    path.resolve(__dirname, "..", "public"),
-    path.resolve(__dirname, "dist", "public"),
-    path.resolve(__dirname, "public"),
-    path.resolve("/var/task", "dist", "public"),
-    path.resolve("/var/task", "public"),
-    path.resolve(".", "dist", "public"),
-    path.resolve(".", "public"),
-  ];
-  
-  let validPath: string | null = null;
-  for (const testPath of possiblePaths) {
-    console.log(`Checking path: ${testPath}, exists: ${fs.existsSync(testPath)}`);
-    if (fs.existsSync(testPath)) {
-      validPath = testPath;
-      console.log(`Found build directory at: ${testPath}`);
-      break;
+
+    app.use(express.static(distPath));
+
+    // Serve attached_assets as static files
+    const assetsPath = path.resolve(process.cwd(), "attached_assets");
+    if (fs.existsSync(assetsPath)) {
+      app.use("/attached_assets", express.static(assetsPath));
     }
-  }
-  
-  if (!validPath) {
-    console.error(`Could not find build directory. Tried: ${possiblePaths.join(', ')}`);
-    
-    throw new Error(
-      `Could not find the build directory. Tried: ${possiblePaths.join(', ')}. Make sure to build the client first.`,
-    );
-  }
 
-  app.use(express.static(validPath));
-
-  // Serve attached_assets as static files
-  const assetsPath = path.resolve(process.cwd(), "attached_assets");
-  const distAssetsPath = path.resolve(validPath, "attached_assets");
-  
-  if (fs.existsSync(distAssetsPath)) {
-    app.use("/attached_assets", express.static(distAssetsPath));
-  } else if (fs.existsSync(assetsPath)) {
-    app.use("/attached_assets", express.static(assetsPath));
+    // fall through to index.html if the file doesn't exist
+    app.use("*", (_req, res) => {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
-
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(validPath, "index.html"));
-  });
 }
