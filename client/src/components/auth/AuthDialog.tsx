@@ -27,7 +27,13 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, signup, isLoggedIn, redirectAfterLogin, buyNowProduct } = useAuth();
+  const {
+    login,
+    signup,
+    redirectAfterLogin,
+    setRedirectAfterLogin,
+    buyNowProduct,
+  } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
 
@@ -81,7 +87,11 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
     if (!validateLogin()) return;
 
     setIsLoading(true);
-    const success = await login(formData.emailOrMobile, formData.password);
+    const success = await login(
+      formData.emailOrMobile,
+      formData.password,
+      formData.rememberMe,
+    );
     setIsLoading(false);
 
     if (success) {
@@ -93,6 +103,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
       
       // Redirect after login
       if (redirectAfterLogin) {
+        setRedirectAfterLogin(null);
         setLocation(redirectAfterLogin);
       } else if (buyNowProduct) {
         setLocation("/checkout");
@@ -123,6 +134,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
       
       // Redirect after signup
       if (redirectAfterLogin) {
+        setRedirectAfterLogin(null);
         setLocation(redirectAfterLogin);
       } else if (buyNowProduct) {
         setLocation("/checkout");
