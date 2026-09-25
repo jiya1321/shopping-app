@@ -1,22 +1,27 @@
-import smartphoneImg from "@assets/generated_images/smartphone_category_image.png";
-import laptopImg from "@assets/generated_images/laptop_category_image.png";
-import headphonesImg from "@assets/generated_images/headphones_category_image.png";
-import appliancesImg from "@assets/generated_images/home_appliances_category_image.png";
-
-// Import the actual OPPO K14x image
-const oppoK14xImage = smartphoneImg;
+import {
+  categoryImages,
+  getCategoryImage,
+  getGeneratedImage,
+} from "@/lib/images";
 
 export interface Product {
   id: number;
   name: string;
+  brand: string;
   category: string;
   price: number;
   originalPrice?: number;
+  sku: string;
+  stockQuantity: number;
+  status: "In Stock" | "Out of Stock" | "Inactive";
+  lastUpdated: string;
   rating: number;
   reviews: number;
   image: string;
   images?: string[];
   color?: string;
+  ram?: string;
+  storage?: string;
   description: string;
   specs: Record<string, string>;
   isNew?: boolean;
@@ -81,13 +86,6 @@ const catalog: Record<string, CatalogItem[]> = {
   Cameras: [
     ["Canon EOS R50 Mirrorless Camera", 64999, 74999], ["Sony Alpha ZV-E10 Camera", 59990, 69990], ["Nikon Z50 Mirrorless Camera", 69999, 79999], ["GoPro HERO12 Black", 34999, 44999], ["Canon EOS 1500D DSLR Camera", 39999, 49999], ["Fujifilm Instax Mini 12 Camera", 7999, 9999]
   ]
-};
-
-const categoryImages: Record<string, string> = {
-  Mobiles: smartphoneImg,
-  Laptops: laptopImg,
-  Accessories: headphonesImg,
-  "Home Appliances": appliancesImg
 };
 
 const getProductSpecs = (name: string, category: string): Record<string, string> => {
@@ -256,47 +254,46 @@ const getProductImages = (name: string, category: string, defaultImage: string):
   if (category === "Mobiles") {
     const imageGalleries: Record<string, string[]> = {
       "OPPO K14x 5G — 4GB + 128GB — Icy Blue": [
-        "/attached_assets/generated_images/oppo 4-128 icy blue.png"
+        getGeneratedImage("oppo 4-128 icy blue.png")
       ],
       "OPPO K14x 5G — 4GB + 128GB — Prism Violet": [
-        "/attached_assets/generated_images/oppo 4-128 purple.png"
+        getGeneratedImage("oppo 4-128 purple.png")
       ],
       "OPPO K14x 5G — 6GB + 128GB — Icy Blue": [
-        "/attached_assets/generated_images/oppo 4-128 icy blue.png"
+        getGeneratedImage("oppo 4-128 icy blue.png")
       ],
       "OPPO K14x 5G — 6GB + 128GB — Prism Violet": [
-        "/attached_assets/generated_images/oppo 4-128 purple.png"
+        getGeneratedImage("oppo 4-128 purple.png")
       ],
       "Realme C83 5G — 4GB + 64GB — Blue": [
-        "/attached_assets/generated_images/realme c83 4-64 blue.png"
+        getGeneratedImage("realme c83 4-64 blue.png")
       ],
       "Realme C83 5G — 4GB + 64GB — Black": [
-        "/attached_assets/generated_images/realme c83 464 black.png"
+        getGeneratedImage("realme c83 464 black.png")
       ],
       "Realme C83 5G — 4GB + 128GB — Blue": [
-        "/attached_assets/generated_images/realme c83 4-64 blue.png"
+        getGeneratedImage("realme c83 4-64 blue.png")
       ],
       "Realme C83 5G — 4GB + 128GB — Black": [
-        "/attached_assets/generated_images/realme c83 464 black.png"
+        getGeneratedImage("realme c83 464 black.png")
       ],
       "Realme C85 5G — 4GB + 128GB — Black": [
-        "/attached_assets/generated_images/realme c85 4-128 black.png"
+        getGeneratedImage("realme c85 4-128 black.png")
       ],
       "Realme C85 5G — 4GB + 128GB — Brown": [
-        "/attached_assets/generated_images/realme c85 4-128 brown - Copy.png"
+        getGeneratedImage("realme c85 4-128 brown - Copy.png")
       ],
       "Realme C85 5G — 4GB + 128GB — Purple": [
-        "/attached_assets/generated_images/realme c85 4-128 purplr - Copy.png"
+        getGeneratedImage("realme c85 4-128 purplr - Copy.png")
       ],
       "Realme P4 Lite 5G — 4GB + 128GB — Blue": [
-        "/attached_assets/generated_images/realme p4 lite 4-128 blue.png"
+        getGeneratedImage("realme p4 lite 4-128 blue.png")
       ],
       "Realme P4 Lite 5G — 4GB + 128GB — White": [
-        "/attached_assets/generated_images/realme p4 lite 4-128 white.png"
+        getGeneratedImage("realme p4 lite 4-128 white.png")
       ],
       "Motorola G57 Power 5G — 8GB + 128GB": [
-        // TODO: Replace with actual Motorola G57 Power 5G image from attached_assets/generated_images
-        "/attached_assets/generated_images/motrola g57 power 5g 8-128 green.png"
+        getGeneratedImage("motrola g57 power 5g 8-128 green.png")
       ]
     };
     
@@ -308,14 +305,6 @@ const getProductImages = (name: string, category: string, defaultImage: string):
   
   // For non-mobile products or mobiles without specific galleries, return single image
   return [defaultImage];
-};
-
-const getProductMainImage = (name: string, category: string, defaultImage: string): string => {
-  // Use specific main image for OPPO K14x 4GB + 128GB
-  if (category === "Mobiles" && name === "OPPO K14x 5G — 4GB + 128GB") {
-    return oppoK14xImage;
-  }
-  return defaultImage;
 };
 
 const getProductColor = (name: string, category: string): string | undefined => {
@@ -331,47 +320,56 @@ const getProductColor = (name: string, category: string): string | undefined => 
   return undefined;
 };
 
+const createSku = (name: string, id: number) =>
+  `${name
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .toUpperCase()
+    .slice(0, 36)}-${id}`;
+
 export const products: Product[] = Object.entries(catalog).flatMap(([category, items], categoryIndex) =>
   items.map(([name, price, originalPrice], itemIndex) => {
-    const defaultImage = categoryImages[category] || appliancesImg;
+    const defaultImage = getCategoryImage(category);
+    const images = getProductImages(name, category, defaultImage);
+    const id = getProductId(name, category, categoryIndex, itemIndex);
+    const specs = getProductSpecs(name, category);
 
-const images = getProductImages(name, category, defaultImage);
-
-return {
-  id: getProductId(name, category, categoryIndex, itemIndex),
-  name,
-  category,
-  price,
-  originalPrice,
-  rating: Number((4.4 + ((itemIndex + categoryIndex) % 6) / 10).toFixed(1)),
-  reviews: 120 + (categoryIndex * 400) + (itemIndex * 83),
-
-  // First image from the product's own gallery
-  image: images[0],
-
-  // Full product gallery
-  images,
-
-  // Color field for mobile products
-  color: getProductColor(name, category),
-
-  description: `${name} with dependable performance, modern features, and GST-inclusive pricing from Krishna Electronics.`,
-  specs: getProductSpecs(name, category),
-  isNew: itemIndex < 3,
-  isBestSeller: itemIndex % 5 === 0
-};
-      
+    return {
+      id,
+      name,
+      brand: specs.Brand || name.split(" ")[0],
+      category,
+      price,
+      originalPrice,
+      sku: createSku(name, id),
+      stockQuantity: 8 + ((id * 7) % 23),
+      status: "In Stock" as const,
+      lastUpdated: new Date().toISOString(),
+      rating: Number((4.4 + ((itemIndex + categoryIndex) % 6) / 10).toFixed(1)),
+      reviews: 120 + (categoryIndex * 400) + (itemIndex * 83),
+      image: images[0],
+      images,
+      color: getProductColor(name, category),
+      ram: specs.RAM,
+      storage: specs.Storage,
+      description: `${name} with dependable performance, modern features, and GST-inclusive pricing from Krishna Electronics.`,
+      specs,
+      isNew: itemIndex < 3,
+      isBestSeller: itemIndex % 5 === 0
+    };
   })
 );
 
 export const categories = [
-  { name: "Mobiles", image: smartphoneImg },
-  { name: "Laptops", image: laptopImg },
-  { name: "Televisions", image: appliancesImg },
-  { name: "Refrigerators", image: appliancesImg },
-  { name: "Air Conditioners", image: appliancesImg },
-  { name: "Washing Machines", image: appliancesImg },
-  { name: "Headphones", image: headphonesImg },
-  { name: "Cameras", image: appliancesImg },
-  { name: "Accessories", image: headphonesImg }
-];
+  "Mobiles",
+  "Laptops",
+  "Televisions",
+  "Refrigerators",
+  "Air Conditioners",
+  "Washing Machines",
+  "Headphones",
+  "Cameras",
+  "Accessories",
+].map((name) => ({ name, image: categoryImages[name] }));

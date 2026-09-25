@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,23 +19,49 @@ interface AuthDialogProps {
   onClose: () => void;
 }
 
+const initialFormData = {
+  emailOrMobile: "",
+  password: "",
+  name: "",
+  email: "",
+  mobile: "",
+  confirmPassword: "",
+  rememberMe: false,
+};
+
 export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({
-    emailOrMobile: "",
-    password: "",
-    name: "",
-    email: "",
-    mobile: "",
-    confirmPassword: "",
-    rememberMe: false
-  });
+  const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const { login, signup, isLoggedIn, redirectAfterLogin, buyNowProduct } = useAuth();
+  const {
+    login,
+    signup,
+    redirectAfterLogin,
+    setRedirectAfterLogin,
+    buyNowProduct,
+  } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+
+  const resetAndClose = () => {
+    setFormData(initialFormData);
+    setErrors({});
+    setIsLogin(true);
+    setIsLoading(false);
+    onClose();
+  };
+
+  const switchMode = (loginMode: boolean) => {
+    setIsLogin(loginMode);
+    setErrors({});
+    setFormData((current) => ({
+      ...current,
+      password: "",
+      confirmPassword: "",
+    }));
+  };
 
   const validateLogin = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -81,7 +113,11 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
     if (!validateLogin()) return;
 
     setIsLoading(true);
-    const success = await login(formData.emailOrMobile, formData.password);
+    const success = await login(
+      formData.emailOrMobile,
+      formData.password,
+      formData.rememberMe,
+    );
     setIsLoading(false);
 
     if (success) {
@@ -89,10 +125,11 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
         title: "Login Successful",
         description: "Welcome back to Krishna Electronics!",
       });
-      onClose();
+      resetAndClose();
       
       // Redirect after login
       if (redirectAfterLogin) {
+        setRedirectAfterLogin(null);
         setLocation(redirectAfterLogin);
       } else if (buyNowProduct) {
         setLocation("/checkout");
@@ -119,10 +156,11 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
         title: "Account Created",
         description: "Welcome to Krishna Electronics!",
       });
-      onClose();
+      resetAndClose();
       
       // Redirect after signup
       if (redirectAfterLogin) {
+        setRedirectAfterLogin(null);
         setLocation(redirectAfterLogin);
       } else if (buyNowProduct) {
         setLocation("/checkout");
@@ -144,12 +182,22 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) resetAndClose();
+      }}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             {isLogin ? "Sign In" : "Create Account"}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {isLogin
+              ? "Sign in to your Krishna Electronics customer account."
+              : "Create a Krishna Electronics customer account."}
+          </DialogDescription>
         </DialogHeader>
 
         {isLogin ? (
@@ -199,7 +247,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
             <div className="text-center text-sm">
               <span className="text-gray-600">New to Krishna Electronics? </span>
-              <Button type="button" variant="link" className="p-0 h-auto" onClick={() => setIsLogin(false)}>
+              <Button type="button" variant="link" className="p-0 h-auto" onClick={() => switchMode(false)}>
                 Create your account
               </Button>
             </div>
@@ -276,7 +324,7 @@ export function AuthDialog({ isOpen, onClose }: AuthDialogProps) {
 
             <div className="text-center text-sm">
               <span className="text-gray-600">Already have an account? </span>
-              <Button type="button" variant="link" className="p-0 h-auto" onClick={() => setIsLogin(true)}>
+              <Button type="button" variant="link" className="p-0 h-auto" onClick={() => switchMode(true)}>
                 Sign in
               </Button>
             </div>

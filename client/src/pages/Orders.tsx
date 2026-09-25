@@ -8,6 +8,8 @@ import { useLocation } from "wouter";
 import { AuthDialog } from "@/components/auth/AuthDialog";
 import { useState, useEffect } from "react";
 import { formatINR } from "@/lib/currency";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 export default function Orders() {
   const { user, isLoggedIn, orders } = useAuth();
@@ -315,9 +317,10 @@ export default function Orders() {
                       {order.items.map((item, index) => (
                         <div key={index} className="flex gap-4">
                           <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border bg-white p-1">
-                            <img
+                            <SafeImage
                               src={item.image}
                               alt={item.name}
+                              fallbackSrc={getCategoryImage(item.category)}
                               className="h-full w-full object-contain"
                             />
                           </div>

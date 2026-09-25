@@ -1,23 +1,28 @@
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { products } from "@/lib/products";
 import { useCart } from "@/context/CartContext";
+import { useInventory } from "@/context/InventoryContext";
 import { useAuth } from "@/context/AuthContext";
 import { useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Star, Truck, Shield, RotateCcw, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatINR } from "@/lib/currency";
+import { getStockLabel, isProductAvailable } from "@/lib/inventory";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 export default function ProductDetails() {
   const [match, params] = useRoute("/product/:id");
   const { addToCart } = useCart();
+  const { products } = useInventory();
   const { isLoggedIn, setRedirectAfterLogin, setBuyNowProduct } = useAuth();
   const [, setLocation] = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
   const product = match ? products.find(p => p.id === parseInt(params.id)) : null;
+  const available = product ? isProductAvailable(product) : false;
 
   useEffect(() => {
     if (product) {
@@ -26,6 +31,10 @@ export default function ProductDetails() {
       setSelectedImage(0);
     }
   }, [product?.id]);
+
+  useEffect(() => {
+    if (product) setQuantity((current) => Math.min(current, Math.max(product.stockQuantity, 1)));
+  }, [product?.stockQuantity]);
 
   if (!match) return null;
 
@@ -45,9 +54,8 @@ export default function ProductDetails() {
   }
 
   const handleAddToCart = () => {
-    for(let i = 0; i < quantity; i++) {
-      addToCart(product);
-    }
+    if (!available) return;
+    addToCart(product, quantity);
   };
 
   const handleBuyNow = () => {
@@ -83,9 +91,10 @@ export default function ProductDetails() {
                       : 'border-gray-200 hover:border-gray-400'
                   }`}
                 >
-                  <img
+                  <SafeImage
                     src={img}
                     alt={`${product.name} view ${index + 1}`}
+                    fallbackSrc={getCategoryImage(product.category)}
                     className="w-full h-full object-contain"
                   />
                 </button>
@@ -94,9 +103,10 @@ export default function ProductDetails() {
 
             {/* Main Image */}
             <div className="flex-1 bg-white p-8 border rounded-xl flex items-center justify-center sticky top-24 h-fit order-2 md:order-2">
-              <img 
+              <SafeImage
                 src={productImages[selectedImage]} 
                 alt={product.name} 
+                fallbackSrc={getCategoryImage(product.category)}
                 className="max-w-full max-h-[500px] object-contain hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -113,9 +123,10 @@ export default function ProductDetails() {
                       : 'border-gray-200 hover:border-gray-400'
                   }`}
                 >
-                  <img
+                  <SafeImage
                     src={img}
                     alt={`${product.name} view ${index + 1}`}
+                    fallbackSrc={getCategoryImage(product.category)}
                     className="w-full h-full object-contain"
                   />
                 </button>
@@ -159,6 +170,9 @@ export default function ProductDetails() {
             <p className="text-gray-700 leading-relaxed text-lg">
               {product.description}
             </p>
+            <p className={`text-sm font-semibold ${available ? product.stockQuantity <= 5 ? "text-amber-700" : "text-green-700" : "text-red-600"}`}>
+              {getStockLabel(product)}
+            </p>
               <p className="text-sm text-gray-600">No-cost EMI available. From {formatINR(Math.ceil(product.price / 12))}/month for 12 months. ₹0 processing fee.</p>
 
             {/* Specs Table */}
@@ -183,8 +197,9 @@ export default function ProductDetails() {
                   value={quantity}
                   onChange={(e) => setQuantity(parseInt(e.target.value))}
                   className="border rounded-md p-2 w-20"
+                  disabled={!available}
                 >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                  {Array.from({ length: Math.min(product.stockQuantity, 10) }, (_, index) => index + 1).map(num => (
                     <option key={num} value={num}>{num}</option>
                   ))}
                 </select>
@@ -195,13 +210,15 @@ export default function ProductDetails() {
                   onClick={handleAddToCart}
                   size="lg" 
                   className="flex-1 bg-secondary text-primary hover:bg-secondary/90 font-bold rounded-full"
+                  disabled={!available}
                 >
-                  Add to Cart
+                  {available ? "Add to Cart" : "Out of Stock"}
                 </Button>
                 <Button 
                   onClick={handleBuyNow}
                   size="lg" 
                   className="flex-1 bg-orange-600 text-white hover:bg-orange-700 font-bold rounded-full"
+                  disabled={!available}
                 >
                   Buy Now
                 </Button>

@@ -1,11 +1,23 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { Product } from "@/lib/products";
+import {
+  authenticateCustomer,
+  clearCustomerSession,
+  createCustomerAccount,
+  CUSTOMER_SESSION_KEY,
+  CustomerUser,
+  migrateCustomerAccounts,
+  persistCustomerSession,
+  restoreCustomerSession,
+} from "@/lib/customerAuth";
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  mobile: string;
-}
+export type User = CustomerUser;
 
 interface SavedAddress {
   id: string;
@@ -20,13 +32,26 @@ interface SavedAddress {
   isDefault: boolean;
 }
 
+type OrderItem = Product & { quantity: number };
+
+type OrderAddress = Pick<
+  SavedAddress,
+  | "fullName"
+  | "mobile"
+  | "houseFlat"
+  | "streetArea"
+  | "city"
+  | "state"
+  | "pinCode"
+>;
+
 interface Order {
   id: string;
   userId: string;
-  items: any[];
+  items: OrderItem[];
   total: number;
   paymentMethod: string;
-  address: any;
+  address: OrderAddress;
   status: string;
   createdAt: string;
   estimatedDelivery: string;
@@ -35,42 +60,106 @@ interface Order {
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  login: (emailOrMobile: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, mobile: string, password: string) => Promise<boolean>;
+  login: (
+    emailOrMobile: string,
+    password: string,
+    rememberMe: boolean,
+  ) => Promise<boolean>;
+  signup: (
+    name: string,
+    email: string,
+    mobile: string,
+    password: string,
+  ) => Promise<boolean>;
   logout: () => void;
   orders: Order[];
   addOrder: (order: Omit<Order, "id" | "userId" | "createdAt">) => void;
   redirectAfterLogin: string | null;
   setRedirectAfterLogin: (redirect: string | null) => void;
-  buyNowProduct: any | null;
-  setBuyNowProduct: (product: any | null) => void;
+  buyNowProduct: Product | null;
+  setBuyNowProduct: (product: Product | null) => void;
   savedAddresses: SavedAddress[];
   addSavedAddress: (address: Omit<SavedAddress, "id">) => void;
   updateSavedAddress: (id: string, address: Partial<SavedAddress>) => void;
   deleteSavedAddress: (id: string) => void;
   setDefaultAddress: (id: string) => void;
+  wishlist: number[];
+  toggleWishlist: (productId: number) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(null);
-  const [buyNowProduct, setBuyNowProduct] = useState<any | null>(null);
-  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+const readArray = <T,>(key: string): T[] => {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(key) || "[]");
+    return Array.isArray(parsed) ? (parsed as T[]) : [];
+  } catch {
+    return [];
+  }
+};
 
-  // Load user from localStorage on mount
+const getWishlistStorageKey = (user: User | null) =>
+  user ? `krishna-wishlist-${user.id}` : "krishna-wishlist-guest";
+
+const loadWishlist = (user: User | null) => {
+  const key = getWishlistStorageKey(user);
+  if (localStorage.getItem(key) !== null) return readArray<number>(key);
+
+  const legacyKey = "krishna-wishlist";
+  const legacyWishlist = readArray<number>(legacyKey);
+  if (localStorage.getItem(legacyKey) !== null) {
+    localStorage.setItem(key, JSON.stringify(legacyWishlist));
+    localStorage.removeItem(legacyKey);
+  }
+  return legacyWishlist;
+};
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(restoreCustomerSession);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(
+    null,
+  );
+  const [buyNowProduct, setBuyNowProduct] = useState<Product | null>(null);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [wishlist, setWishlist] = useState<number[]>([]);
+  const [loadedAccountKey, setLoadedAccountKey] = useState<string | null>(null);
+  const authChannel = useRef<BroadcastChannel | null>(null);
+
   useEffect(() => {
-    const savedUser = localStorage.getItem("krishna-user");
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Failed to parse user", e);
+    void migrateCustomerAccounts();
+  }, []);
+
+  useEffect(() => {
+    const syncPersistentSession = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        event.key === CUSTOMER_SESSION_KEY
+      ) {
+        setUser(restoreCustomerSession());
       }
+    };
+    window.addEventListener("storage", syncPersistentSession);
+
+    if ("BroadcastChannel" in window) {
+      authChannel.current = new BroadcastChannel("krishna-customer-auth");
+      authChannel.current.onmessage = (event: MessageEvent<"logout">) => {
+        if (event.data !== "logout") return;
+        clearCustomerSession();
+        setUser(null);
+        setRedirectAfterLogin(null);
+        setBuyNowProduct(null);
+      };
     }
 
+    return () => {
+      window.removeEventListener("storage", syncPersistentSession);
+      authChannel.current?.close();
+      authChannel.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
     const savedRedirect = localStorage.getItem("krishna-redirect");
     if (savedRedirect) {
       setRedirectAfterLogin(savedRedirect);
@@ -78,118 +167,93 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save user to localStorage on change
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("krishna-user", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("krishna-user");
-    }
+    const accountKey = user?.id || "guest";
+    setLoadedAccountKey(null);
+    setOrders(user ? readArray<Order>(`krishna-orders-${user.id}`) : []);
+    setSavedAddresses(
+      user
+        ? readArray<SavedAddress>(`krishna-addresses-${user.id}`)
+        : [],
+    );
+    setWishlist(loadWishlist(user));
+    setLoadedAccountKey(accountKey);
   }, [user]);
 
-  // Load orders from localStorage (user-specific)
   useEffect(() => {
-    if (user) {
-      try {
-        const savedOrders = localStorage.getItem(`krishna-orders-${user.id}`);
-        if (savedOrders) {
-          setOrders(JSON.parse(savedOrders));
-        } else {
-          setOrders([]);
-        }
-      } catch (e) {
-        console.error("Failed to parse orders", e);
-        setOrders([]);
-      }
-    } else {
-      setOrders([]);
+    if (user && loadedAccountKey === user.id) {
+      localStorage.setItem(
+        `krishna-orders-${user.id}`,
+        JSON.stringify(orders),
+      );
     }
-  }, [user]);
+  }, [loadedAccountKey, orders, user]);
 
-  // Save orders to localStorage on change (user-specific)
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(`krishna-orders-${user.id}`, JSON.stringify(orders));
+    if (user && loadedAccountKey === user.id) {
+      localStorage.setItem(
+        `krishna-addresses-${user.id}`,
+        JSON.stringify(savedAddresses),
+      );
     }
-  }, [orders, user]);
+  }, [loadedAccountKey, savedAddresses, user]);
 
-  // Load saved addresses from localStorage (user-specific)
   useEffect(() => {
-    if (user) {
-      try {
-        const savedAddressesData = localStorage.getItem(`krishna-addresses-${user.id}`);
-        if (savedAddressesData) {
-          setSavedAddresses(JSON.parse(savedAddressesData));
-        } else {
-          setSavedAddresses([]);
-        }
-      } catch (e) {
-        console.error("Failed to parse saved addresses", e);
-        setSavedAddresses([]);
-      }
-    } else {
-      setSavedAddresses([]);
+    const accountKey = user?.id || "guest";
+    if (loadedAccountKey === accountKey) {
+      localStorage.setItem(
+        getWishlistStorageKey(user),
+        JSON.stringify(wishlist),
+      );
     }
-  }, [user]);
+  }, [loadedAccountKey, user, wishlist]);
 
-  // Save addresses to localStorage on change (user-specific)
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem(`krishna-addresses-${user.id}`, JSON.stringify(savedAddresses));
-    }
-  }, [savedAddresses, user]);
-
-  // Save redirect to localStorage
   useEffect(() => {
     if (redirectAfterLogin) {
       localStorage.setItem("krishna-redirect", redirectAfterLogin);
+    } else {
+      localStorage.removeItem("krishna-redirect");
     }
   }, [redirectAfterLogin]);
 
-  const login = async (emailOrMobile: string, password: string): Promise<boolean> => {
-    // Demo authentication - check against localStorage users
-    const users = JSON.parse(localStorage.getItem("krishna-users") || "[]");
-    const foundUser = users.find(
-      (u: any) => (u.email === emailOrMobile || u.mobile === emailOrMobile) && u.password === password
+  const login = async (
+    emailOrMobile: string,
+    password: string,
+    rememberMe: boolean,
+  ) => {
+    const authenticatedUser = await authenticateCustomer(
+      emailOrMobile,
+      password,
     );
+    if (!authenticatedUser) return false;
 
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      return true;
-    }
-
-    return false;
+    persistCustomerSession(authenticatedUser, rememberMe);
+    setUser(authenticatedUser);
+    return true;
   };
 
-  const signup = async (name: string, email: string, mobile: string, password: string): Promise<boolean> => {
-    // Demo signup - save to localStorage
-    const users = JSON.parse(localStorage.getItem("krishna-users") || "[]");
-    
-    // Check if user already exists
-    if (users.some((u: any) => u.email === email || u.mobile === mobile)) {
-      return false;
-    }
-
-    const newUser = {
-      id: Date.now().toString(),
+  const signup = async (
+    name: string,
+    email: string,
+    mobile: string,
+    password: string,
+  ) => {
+    const newUser = await createCustomerAccount(
       name,
       email,
       mobile,
-      password
-    };
+      password,
+    );
+    if (!newUser) return false;
 
-    users.push(newUser);
-    localStorage.setItem("krishna-users", JSON.stringify(users));
-
-    // Auto login after signup
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-
+    persistCustomerSession(newUser, false);
+    setUser(newUser);
     return true;
   };
 
   const logout = () => {
+    clearCustomerSession();
+    authChannel.current?.postMessage("logout");
     setUser(null);
     setRedirectAfterLogin(null);
     setBuyNowProduct(null);
@@ -200,48 +264,66 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const newOrder: Order = {
       ...order,
-      id: "KE" + Date.now().toString().slice(-8),
+      id: `KE${Date.now().toString().slice(-8)}`,
       userId: user.id,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     };
-
-    setOrders((prev) => [newOrder, ...prev]);
+    setOrders((current) => [newOrder, ...current]);
   };
 
   const addSavedAddress = (address: Omit<SavedAddress, "id">) => {
+    if (!user) return;
+
     const newAddress: SavedAddress = {
       ...address,
-      id: Date.now().toString()
+      id: Date.now().toString(),
     };
-
-    // If setting as default, remove default from others
-    if (address.isDefault) {
-      setSavedAddresses((prev) =>
-        prev.map((addr) => ({ ...addr, isDefault: false }))
-      );
-    }
-
-    setSavedAddresses((prev) => [newAddress, ...prev]);
+    setSavedAddresses((current) => [
+      newAddress,
+      ...current.map((savedAddress) =>
+        address.isDefault
+          ? { ...savedAddress, isDefault: false }
+          : savedAddress,
+      ),
+    ]);
   };
 
-  const updateSavedAddress = (id: string, address: Partial<SavedAddress>) => {
-    setSavedAddresses((prev) =>
-      prev.map((addr) =>
-        addr.id === id ? { ...addr, ...address } : addr
-      )
+  const updateSavedAddress = (
+    id: string,
+    address: Partial<SavedAddress>,
+  ) => {
+    if (!user) return;
+    setSavedAddresses((current) =>
+      current.map((savedAddress) =>
+        savedAddress.id === id
+          ? { ...savedAddress, ...address }
+          : savedAddress,
+      ),
     );
   };
 
   const deleteSavedAddress = (id: string) => {
-    setSavedAddresses((prev) => prev.filter((addr) => addr.id !== id));
+    if (!user) return;
+    setSavedAddresses((current) =>
+      current.filter((address) => address.id !== id),
+    );
   };
 
   const setDefaultAddress = (id: string) => {
-    setSavedAddresses((prev) =>
-      prev.map((addr) => ({
-        ...addr,
-        isDefault: addr.id === id
-      }))
+    if (!user) return;
+    setSavedAddresses((current) =>
+      current.map((address) => ({
+        ...address,
+        isDefault: address.id === id,
+      })),
+    );
+  };
+
+  const toggleWishlist = (productId: number) => {
+    setWishlist((current) =>
+      current.includes(productId)
+        ? current.filter((id) => id !== productId)
+        : [...current, productId],
     );
   };
 
@@ -249,7 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
-        isLoggedIn: !!user,
+        isLoggedIn: Boolean(user),
         login,
         signup,
         logout,
@@ -263,7 +345,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         addSavedAddress,
         updateSavedAddress,
         deleteSavedAddress,
-        setDefaultAddress
+        setDefaultAddress,
+        wishlist,
+        toggleWishlist,
       }}
     >
       {children}
@@ -273,7 +357,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;

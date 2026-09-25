@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { formatINR } from "@/lib/currency";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 export default function Cart() {
   const { items, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
@@ -65,9 +67,10 @@ export default function Cart() {
                   {items.map((item) => (
                     <div key={item.id} className="p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center">
                       <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border bg-white p-2">
-                        <img
+                        <SafeImage
                           src={item.image}
                           alt={item.name}
+                          fallbackSrc={getCategoryImage(item.category)}
                           className="h-full w-full object-contain"
                         />
                       </div>
@@ -95,11 +98,17 @@ export default function Cart() {
                           <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-2 hover:bg-gray-100 text-gray-600"
+                            disabled={item.quantity >= item.stockQuantity}
+                            className="p-2 hover:bg-gray-100 text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Plus size={14} />
                           </button>
                         </div>
+                        {item.stockQuantity <= 5 && (
+                          <span className="text-xs font-semibold text-amber-700">
+                            Only {item.stockQuantity} left
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

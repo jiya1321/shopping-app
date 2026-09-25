@@ -12,6 +12,8 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { formatINR } from "@/lib/currency";
 import { Check, Truck, Shield, Clock, ArrowLeft, CreditCard, Smartphone, Building2, Wallet, IndianRupee, Plus, Edit, Trash2, MapPin, Star } from "lucide-react";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 interface AddressFormData {
   fullName: string;
@@ -965,9 +967,10 @@ export default function Checkout() {
                   {items.map((item) => (
                     <div key={item.id} className="flex gap-3">
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border bg-white p-1">
-                        <img
+                        <SafeImage
                           src={item.image}
                           alt={item.name}
+                          fallbackSrc={getCategoryImage(item.category)}
                           className="h-full w-full object-contain"
                         />
                       </div>
