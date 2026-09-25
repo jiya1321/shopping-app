@@ -2,6 +2,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { Product } from "@/lib/products";
@@ -9,6 +10,7 @@ import {
   authenticateCustomer,
   clearCustomerSession,
   createCustomerAccount,
+  CUSTOMER_SESSION_KEY,
   CustomerUser,
   migrateCustomerAccounts,
   persistCustomerSession,
@@ -122,9 +124,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [loadedAccountKey, setLoadedAccountKey] = useState<string | null>(null);
+  const authChannel = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
     void migrateCustomerAccounts();
+  }, []);
+
+  useEffect(() => {
+    const syncPersistentSession = (event: StorageEvent) => {
+      if (
+        event.storageArea === localStorage &&
+        event.key === CUSTOMER_SESSION_KEY
+      ) {
+        setUser(restoreCustomerSession());
+      }
+    };
+    window.addEventListener("storage", syncPersistentSession);
+
+    if ("BroadcastChannel" in window) {
+      authChannel.current = new BroadcastChannel("krishna-customer-auth");
+      authChannel.current.onmessage = (event: MessageEvent<"logout">) => {
+        if (event.data !== "logout") return;
+        clearCustomerSession();
+        setUser(null);
+        setRedirectAfterLogin(null);
+        setBuyNowProduct(null);
+      };
+    }
+
+    return () => {
+      window.removeEventListener("storage", syncPersistentSession);
+      authChannel.current?.close();
+      authChannel.current = null;
+    };
   }, []);
 
   useEffect(() => {
@@ -221,6 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     clearCustomerSession();
+    authChannel.current?.postMessage("logout");
     setUser(null);
     setRedirectAfterLogin(null);
     setBuyNowProduct(null);
