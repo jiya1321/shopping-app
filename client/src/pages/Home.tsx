@@ -2,12 +2,14 @@ import { HeroCarousel } from "@/components/ui/HeroCarousel";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { products, categories } from "@/lib/products";
+import { categories } from "@/lib/products";
+import { useInventory } from "@/context/InventoryContext";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 export default function Home() {
+  const { products } = useInventory();
   const trendingProducts = products.filter(p => p.isBestSeller || p.isNew).slice(0, 4);
   const dealProducts = products.slice(4, 8);
   const offerProducts = products.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 4);

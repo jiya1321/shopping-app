@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/ui/ProductCard";
-import { products } from "@/lib/products";
+import { useInventory } from "@/context/InventoryContext";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { formatINR } from "@/lib/currency";
 
 export default function Shop() {
+  const { products } = useInventory();
   const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const categoryParam = searchParams.get("category");
@@ -54,7 +55,7 @@ export default function Shop() {
     result = result.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
     setFilteredProducts(result);
-  }, [selectedCategories, priceRange, searchParam]);
+  }, [products, selectedCategories, priceRange, searchParam]);
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev => 

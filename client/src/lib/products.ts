@@ -9,14 +9,21 @@ const oppoK14xImage = smartphoneImg;
 export interface Product {
   id: number;
   name: string;
+  brand: string;
   category: string;
   price: number;
   originalPrice?: number;
+  sku: string;
+  stockQuantity: number;
+  status: "In Stock" | "Out of Stock" | "Inactive";
+  lastUpdated: string;
   rating: number;
   reviews: number;
   image: string;
   images?: string[];
   color?: string;
+  ram?: string;
+  storage?: string;
   description: string;
   specs: Record<string, string>;
   isNew?: boolean;
@@ -331,36 +338,45 @@ const getProductColor = (name: string, category: string): string | undefined => 
   return undefined;
 };
 
+const createSku = (name: string, id: number) =>
+  `${name
+    .normalize("NFKD")
+    .replace(/[^\w\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .toUpperCase()
+    .slice(0, 36)}-${id}`;
+
 export const products: Product[] = Object.entries(catalog).flatMap(([category, items], categoryIndex) =>
   items.map(([name, price, originalPrice], itemIndex) => {
     const defaultImage = categoryImages[category] || appliancesImg;
+    const images = getProductImages(name, category, defaultImage);
+    const id = getProductId(name, category, categoryIndex, itemIndex);
+    const specs = getProductSpecs(name, category);
 
-const images = getProductImages(name, category, defaultImage);
-
-return {
-  id: getProductId(name, category, categoryIndex, itemIndex),
-  name,
-  category,
-  price,
-  originalPrice,
-  rating: Number((4.4 + ((itemIndex + categoryIndex) % 6) / 10).toFixed(1)),
-  reviews: 120 + (categoryIndex * 400) + (itemIndex * 83),
-
-  // First image from the product's own gallery
-  image: images[0],
-
-  // Full product gallery
-  images,
-
-  // Color field for mobile products
-  color: getProductColor(name, category),
-
-  description: `${name} with dependable performance, modern features, and GST-inclusive pricing from Krishna Electronics.`,
-  specs: getProductSpecs(name, category),
-  isNew: itemIndex < 3,
-  isBestSeller: itemIndex % 5 === 0
-};
-      
+    return {
+      id,
+      name,
+      brand: specs.Brand || name.split(" ")[0],
+      category,
+      price,
+      originalPrice,
+      sku: createSku(name, id),
+      stockQuantity: 8 + ((id * 7) % 23),
+      status: "In Stock" as const,
+      lastUpdated: new Date().toISOString(),
+      rating: Number((4.4 + ((itemIndex + categoryIndex) % 6) / 10).toFixed(1)),
+      reviews: 120 + (categoryIndex * 400) + (itemIndex * 83),
+      image: images[0],
+      images,
+      color: getProductColor(name, category),
+      ram: specs.RAM,
+      storage: specs.Storage,
+      description: `${name} with dependable performance, modern features, and GST-inclusive pricing from Krishna Electronics.`,
+      specs,
+      isNew: itemIndex < 3,
+      isBestSeller: itemIndex % 5 === 0
+    };
   })
 );
 

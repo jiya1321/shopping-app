@@ -3,11 +3,13 @@ import { FolderSearch, History, Search, Tag, X } from "lucide-react";
 import { useLocation } from "wouter";
 import { Input } from "@/components/ui/input";
 import { getSuggestions, popularSearches, searchCategories, SearchSuggestion } from "@/lib/search";
+import { useInventory } from "@/context/InventoryContext";
 
 const RECENT_KEY = "krishna-recent-searches";
 const readRecent = () => { try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") as string[]; } catch { return []; } };
 
 export function SearchBar({ mobile = false }: { mobile?: boolean }) {
+  const { products } = useInventory();
   const [, setLocation] = useLocation();
   const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get("search") || "");
   const [scope, setScope] = useState("All Categories");
@@ -15,7 +17,7 @@ export function SearchBar({ mobile = false }: { mobile?: boolean }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
-  const suggestions = getSuggestions(query, scope);
+  const suggestions = getSuggestions(query, scope, products);
 
   useEffect(() => { const close = (event: MouseEvent) => { if (!containerRef.current?.contains(event.target as Node)) setOpen(false); }; document.addEventListener("mousedown", close); return () => document.removeEventListener("mousedown", close); }, []);
   const saveSearch = (value: string) => { const next = [value.trim(), ...recent.filter((item) => item.toLowerCase() !== value.trim().toLowerCase())].slice(0, 8); setRecent(next); localStorage.setItem(RECENT_KEY, JSON.stringify(next)); };

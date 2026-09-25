@@ -95,11 +95,17 @@ export default function Cart() {
                           <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
                           <button 
                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-2 hover:bg-gray-100 text-gray-600"
+                            disabled={item.quantity >= item.stockQuantity}
+                            className="p-2 hover:bg-gray-100 text-gray-600 disabled:cursor-not-allowed disabled:opacity-40"
                           >
                             <Plus size={14} />
                           </button>
                         </div>
+                        {item.stockQuantity <= 5 && (
+                          <span className="text-xs font-semibold text-amber-700">
+                            Only {item.stockQuantity} left
+                          </span>
+                        )}
                         <Button
                           variant="ghost"
                           size="icon"

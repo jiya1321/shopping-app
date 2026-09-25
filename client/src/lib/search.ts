@@ -33,11 +33,15 @@ const inferredSpecs = (product: Product) => {
 };
 const searchable = (product: Product) => normalise(`${product.name} ${product.category} ${product.description} ${Object.entries(product.specs).map(([key, value]) => `${key} ${value}`).join(" ")} ${inferredSpecs(product)}`);
 
-export const searchProducts = (query: string, scope = "All Categories") => {
+export const searchProducts = (
+  query: string,
+  scope = "All Categories",
+  catalog: Product[] = products,
+) => {
   const constraints = parseSearch(query);
   const tokens = normalise(query).split(" ").filter((token) => token && !stopWords.has(token) && !/^\d+$/.test(token)).flatMap((token) => categoryAliases[token] ? [token, ...normalise(categoryAliases[token]).split(" ")] : [token]);
   const scopedCategory = scope !== "All Categories" ? scope : constraints.category;
-  return products.filter((product) => (!scopedCategory || product.category === scopedCategory) && (constraints.minPrice === undefined || product.price >= constraints.minPrice) && (constraints.maxPrice === undefined || product.price <= constraints.maxPrice)).map((product) => {
+  return catalog.filter((product) => (!scopedCategory || product.category === scopedCategory) && (constraints.minPrice === undefined || product.price >= constraints.minPrice) && (constraints.maxPrice === undefined || product.price <= constraints.maxPrice)).map((product) => {
     const name = normalise(product.name); const brand = name.split(" ")[0]; const category = normalise(product.category); const text = searchable(product);
     const score = tokens.reduce((total, token) => total + (name.includes(token) ? 8 : brand.includes(token) ? 7 : category.includes(token) ? 6 : text.includes(token) ? 3 : 0), 0) + (query && name === normalise(query) ? 20 : 0);
     return { product, score };
@@ -51,11 +55,15 @@ export const didYouMean = (query: string) => {
   return candidate && candidate.score > 0 && candidate.score <= Math.max(2, Math.floor(input.length / 3)) ? candidate.word : undefined;
 };
 
-export const getSuggestions = (query: string, scope = "All Categories"): SearchSuggestion[] => {
+export const getSuggestions = (
+  query: string,
+  scope = "All Categories",
+  catalog: Product[] = products,
+): SearchSuggestion[] => {
   const input = normalise(query); if (!input) return [];
   const categoryMatches = searchCategories.slice(1).filter((category) => normalise(category).includes(input) || Object.entries(categoryAliases).some(([alias, value]) => value === category && alias.includes(input))).slice(0, 3).map((label) => ({ type: "category" as const, label }));
-  const brandNames = Array.from(new Set(products.map((product) => product.name.split(" ")[0]))).filter((brand) => normalise(brand).includes(input)).slice(0, 3).map((label) => ({ type: "brand" as const, label }));
-  const productMatches = searchProducts(query, scope).slice(0, 6).map((product) => ({ type: "product" as const, label: product.name, product }));
+  const brandNames = Array.from(new Set(catalog.map((product) => product.brand || product.name.split(" ")[0]))).filter((brand) => normalise(brand).includes(input)).slice(0, 3).map((label) => ({ type: "brand" as const, label }));
+  const productMatches = searchProducts(query, scope, catalog).slice(0, 6).map((product) => ({ type: "product" as const, label: product.name, product }));
   const correction = didYouMean(query);
   const correctionSuggestion = correction ? [{ type: "correction" as const, label: `Did you mean: ${correction}` }] : [];
   return [...correctionSuggestion, ...brandNames, ...categoryMatches, ...productMatches].filter((suggestion, index, all) => all.findIndex((item) => item.label === suggestion.label) === index).slice(0, 8);

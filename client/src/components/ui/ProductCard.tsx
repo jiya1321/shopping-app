@@ -5,6 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { Star, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { formatINR } from "@/lib/currency";
+import { getStockLabel, isProductAvailable } from "@/lib/inventory";
 
 interface ProductCardProps {
   product: Product;
@@ -13,10 +14,12 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const [, setLocation] = useLocation();
+  const available = isProductAvailable(product);
 
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!available) return;
     addToCart(product);
     setLocation("/cart");
   };
@@ -24,6 +27,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!available) return;
     addToCart(product);
   };
 
@@ -77,6 +81,9 @@ export function ProductCard({ product }: ProductCardProps) {
               </>
             )}
           </div>
+          <p className={`mt-2 text-xs font-semibold ${available ? product.stockQuantity <= 5 ? "text-amber-700" : "text-green-700" : "text-red-600"}`}>
+            {getStockLabel(product)}
+          </p>
         </CardContent>
         
         <CardFooter className="p-4 pt-0 flex gap-2">
@@ -84,12 +91,14 @@ export function ProductCard({ product }: ProductCardProps) {
             onClick={handleAddToCart}
             variant="outline" 
             className="flex-1 h-9 text-xs"
+            disabled={!available}
           >
-            Add to Cart
+            {available ? "Add to Cart" : "Out of Stock"}
           </Button>
           <Button 
             onClick={handleBuyNow}
             className="flex-1 h-9 text-xs bg-secondary text-primary hover:bg-secondary/90 border-none"
+            disabled={!available}
           >
             Buy Now
           </Button>

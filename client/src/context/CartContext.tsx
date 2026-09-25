@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Product } from "@/lib/products";
 import { useToast } from "@/hooks/use-toast";
+import { useInventory } from "@/context/InventoryContext";
+import { isProductAvailable } from "@/lib/inventory";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -8,7 +10,7 @@ export interface CartItem extends Product {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: Product) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   removeFromCart: (productId: number) => void;
   updateQuantity: (productId: number, quantity: number) => void;
   clearCart: () => void;
@@ -19,41 +21,72 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const { toast } = useToast();
-
-  // Load cart from local storage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem("krishna-cart");
-    if (savedCart) {
-      try {
-        setItems(JSON.parse(savedCart));
-      } catch (e) {
-        console.error("Failed to parse cart", e);
-      }
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const savedCart = localStorage.getItem("krishna-cart");
+      return savedCart ? JSON.parse(savedCart) : [];
+    } catch {
+      return [];
     }
-  }, []);
+  });
+  const { toast } = useToast();
+  const { products } = useInventory();
 
-  // Save cart to local storage on change
   useEffect(() => {
     localStorage.setItem("krishna-cart", JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (product: Product) => {
+  useEffect(() => {
+    setItems((current) =>
+      current.flatMap((item) => {
+        const inventoryProduct = products.find((product) => product.id === item.id);
+        if (!inventoryProduct || !isProductAvailable(inventoryProduct)) return [];
+        return [{
+          ...inventoryProduct,
+          quantity: Math.min(item.quantity, inventoryProduct.stockQuantity),
+        }];
+      }),
+    );
+  }, [products]);
+
+  const addToCart = (product: Product, quantity = 1) => {
+    const inventoryProduct = products.find((item) => item.id === product.id) || product;
+    if (!isProductAvailable(inventoryProduct)) {
+      toast({
+        title: "Out of Stock",
+        description: `${inventoryProduct.name} is currently unavailable.`,
+        variant: "destructive",
+      });
+      return;
+    }
+    const requestedQuantity = Math.max(1, Math.floor(quantity));
+    const existing = items.find((item) => item.id === inventoryProduct.id);
+    const currentQuantity = existing?.quantity || 0;
+    const nextQuantity = Math.min(
+      currentQuantity + requestedQuantity,
+      inventoryProduct.stockQuantity,
+    );
+    if (nextQuantity === currentQuantity) {
+      toast({
+        title: "Stock limit reached",
+        description: `Only ${inventoryProduct.stockQuantity} units are available.`,
+        variant: "destructive",
+      });
+      return;
+    }
     setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+          item.id === inventoryProduct.id
+            ? { ...inventoryProduct, quantity: nextQuantity }
             : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...inventoryProduct, quantity: nextQuantity }];
     });
     toast({
       title: "Added to Cart",
-      description: `${product.name} has been added to your cart.`,
+      description: `${inventoryProduct.name} has been added to your cart.`,
     });
   };
 
@@ -70,9 +103,22 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeFromCart(productId);
       return;
     }
+    const inventoryProduct = products.find((product) => product.id === productId);
+    if (!inventoryProduct || !isProductAvailable(inventoryProduct)) {
+      removeFromCart(productId);
+      return;
+    }
+    const nextQuantity = Math.min(quantity, inventoryProduct.stockQuantity);
+    if (quantity > inventoryProduct.stockQuantity) {
+      toast({
+        title: "Stock limit reached",
+        description: `Only ${inventoryProduct.stockQuantity} units are available.`,
+        variant: "destructive",
+      });
+    }
     setItems((prev) =>
       prev.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
+        item.id === productId ? { ...inventoryProduct, quantity: nextQuantity } : item
       )
     );
   };
