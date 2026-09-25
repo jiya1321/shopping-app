@@ -6,6 +6,8 @@ import { Star, ShoppingCart } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { formatINR } from "@/lib/currency";
 import { getStockLabel, isProductAvailable } from "@/lib/inventory";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 interface ProductCardProps {
   product: Product;
@@ -45,9 +47,10 @@ export function ProductCard({ product }: ProductCardProps) {
               BESTSELLER
             </span>
           )}
-              <img 
+          <SafeImage
             src={product.image} 
             alt={product.name} 
+            fallbackSrc={getCategoryImage(product.category)}
             className="object-contain w-full h-full transition-transform duration-500 group-hover:scale-110"
           />
         </div>

@@ -43,6 +43,8 @@ import {
 import { isAdminAuthenticated, signOutAdmin } from "@/lib/adminAuth";
 import { useInventory } from "@/context/InventoryContext";
 import { useToast } from "@/hooks/use-toast";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 type EditDraft = {
   name: string;
@@ -367,9 +369,10 @@ export default function AdminInventory() {
                   <TableRow key={product.id}>
                     <TableCell className="min-w-72">
                       <div className="flex items-center gap-3">
-                        <img
+                        <SafeImage
                           src={product.image}
                           alt=""
+                          fallbackSrc={getCategoryImage(product.category)}
                           className="h-12 w-12 rounded border bg-white object-contain p-1"
                         />
                         <div>

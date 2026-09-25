@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import heroImage from "@assets/generated_images/modern_electronics_store_hero_banner.png";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { heroImage } from "@/lib/images";
 
 const slides = [
   {
@@ -55,10 +56,10 @@ export function HeroCarousel() {
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          {/* Background Image */}
-          <div 
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${slides[current].image})` }}
+          <SafeImage
+            src={slides[current].image}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
           />
           
           {/* Overlay Gradient */}

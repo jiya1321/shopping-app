@@ -1,4 +1,5 @@
 import { Product, products as catalogProducts } from "@/lib/products";
+import { getCategoryImage, resolveImageSource } from "@/lib/images";
 
 export const INVENTORY_STORAGE_KEY = "krishna-inventory";
 
@@ -96,15 +97,25 @@ export const normaliseInventory = (saved: Product[]) => {
             (product.sku && catalogProduct.sku === product.sku),
         ),
     ),
-  ].map((product) => ({
-    ...product,
-    status:
-      product.status === "Inactive"
-        ? "Inactive" as const
-        : product.stockQuantity > 0
-          ? "In Stock" as const
-          : "Out of Stock" as const,
-  }));
+  ].map((product) => {
+    const imageFallback = getCategoryImage(product.category);
+    const image = resolveImageSource(product.image, imageFallback);
+    const images = (product.images?.length ? product.images : [image]).map(
+      (source) => resolveImageSource(source, image),
+    );
+
+    return {
+      ...product,
+      image,
+      images,
+      status:
+        product.status === "Inactive"
+          ? "Inactive" as const
+          : product.stockQuantity > 0
+            ? "In Stock" as const
+            : "Out of Stock" as const,
+    };
+  });
 };
 
 export const loadInventory = () => {

@@ -9,6 +9,8 @@ import { useInventory } from "@/context/InventoryContext";
 import { isProductAvailable } from "@/lib/inventory";
 import { classifyIntent, extractEntities, updateContext, generateContextualResponse, ConversationContext } from "@/lib/krishna-nlu";
 import type { Intent } from "@/lib/krishna-nlu";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 type ChatMessage = {
   id: string;
@@ -20,7 +22,7 @@ type ChatMessage = {
 };
 const quickActions = ["Find a Phone", "Find a Laptop", "Find a TV", "Find an Appliance", "Compare Products"];
 
-function RecommendationCard({ product }: { product: Product }) { const { addToCart } = useCart(); const [, setLocation] = useLocation(); const [added, setAdded] = useState(false); const available = isProductAvailable(product); const add = () => { if (!available) return; addToCart(product); setAdded(true); window.setTimeout(() => setAdded(false), 1200); }; return <div className="rounded-lg border border-gray-200 bg-gray-50 p-3"><div className="flex gap-3"><img src={product.image} alt={product.name} className="h-16 w-16 rounded bg-white object-contain" /><div className="min-w-0 flex-1"><button onClick={() => setLocation(`/product/${product.id}`)} className="line-clamp-2 text-left text-sm font-bold text-gray-900 hover:text-orange-600">{product.name}</button><div className="mt-1 flex items-center gap-2 text-xs"><span className="rounded bg-green-700 px-1.5 py-0.5 text-white">★ {product.rating}</span><span className="text-gray-500">{formatINR(product.price)}</span></div></div></div><p className="mt-2 text-xs text-gray-600">A real match from the Krishna Electronics catalogue.</p><button disabled={!available} onClick={add} className="mt-2 flex w-full items-center justify-center gap-1 rounded-md bg-orange-500 py-1.5 text-xs font-bold text-white disabled:bg-gray-400">{available ? added ? <><Check size={13} /> Added</> : <><ShoppingCart size={13} /> Add to Cart</> : "Out of Stock"}</button></div>; }
+function RecommendationCard({ product }: { product: Product }) { const { addToCart } = useCart(); const [, setLocation] = useLocation(); const [added, setAdded] = useState(false); const available = isProductAvailable(product); const add = () => { if (!available) return; addToCart(product); setAdded(true); window.setTimeout(() => setAdded(false), 1200); }; return <div className="rounded-lg border border-gray-200 bg-gray-50 p-3"><div className="flex gap-3"><SafeImage src={product.image} alt={product.name} fallbackSrc={getCategoryImage(product.category)} className="h-16 w-16 rounded bg-white object-contain" /><div className="min-w-0 flex-1"><button onClick={() => setLocation(`/product/${product.id}`)} className="line-clamp-2 text-left text-sm font-bold text-gray-900 hover:text-orange-600">{product.name}</button><div className="mt-1 flex items-center gap-2 text-xs"><span className="rounded bg-green-700 px-1.5 py-0.5 text-white">★ {product.rating}</span><span className="text-gray-500">{formatINR(product.price)}</span></div></div></div><p className="mt-2 text-xs text-gray-600">A real match from the Krishna Electronics catalogue.</p><button disabled={!available} onClick={add} className="mt-2 flex w-full items-center justify-center gap-1 rounded-md bg-orange-500 py-1.5 text-xs font-bold text-white disabled:bg-gray-400">{available ? added ? <><Check size={13} /> Added</> : <><ShoppingCart size={13} /> Add to Cart</> : "Out of Stock"}</button></div>; }
 
 const CHAT_STORAGE_KEY = "krishna-ai-chat";
 const WELCOME_MESSAGE: ChatMessage = {

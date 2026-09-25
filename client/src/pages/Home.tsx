@@ -7,6 +7,7 @@ import { useInventory } from "@/context/InventoryContext";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { SafeImage } from "@/components/ui/SafeImage";
 
 export default function Home() {
   const { products } = useInventory();
@@ -29,7 +30,11 @@ export default function Home() {
                 <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow cursor-pointer flex flex-col items-center text-center h-full">
                   <h3 className="font-bold text-lg mb-2 text-primary">{cat.name}</h3>
                   <div className="flex-1 flex items-center justify-center w-full h-32 mb-4">
-                    <img src={cat.image} alt={cat.name} className="max-h-full max-w-full object-contain" />
+                    <SafeImage
+                      src={cat.image}
+                      alt={cat.name}
+                      className="max-h-full max-w-full object-contain"
+                    />
                   </div>
                   <span className="text-xs text-blue-600 hover:underline">Shop Now</span>
                 </div>

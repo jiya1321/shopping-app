@@ -9,6 +9,8 @@ import { Star, Truck, Shield, RotateCcw, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatINR } from "@/lib/currency";
 import { getStockLabel, isProductAvailable } from "@/lib/inventory";
+import { SafeImage } from "@/components/ui/SafeImage";
+import { getCategoryImage } from "@/lib/images";
 
 export default function ProductDetails() {
   const [match, params] = useRoute("/product/:id");
@@ -89,9 +91,10 @@ export default function ProductDetails() {
                       : 'border-gray-200 hover:border-gray-400'
                   }`}
                 >
-                  <img
+                  <SafeImage
                     src={img}
                     alt={`${product.name} view ${index + 1}`}
+                    fallbackSrc={getCategoryImage(product.category)}
                     className="w-full h-full object-contain"
                   />
                 </button>
@@ -100,9 +103,10 @@ export default function ProductDetails() {
 
             {/* Main Image */}
             <div className="flex-1 bg-white p-8 border rounded-xl flex items-center justify-center sticky top-24 h-fit order-2 md:order-2">
-              <img 
+              <SafeImage
                 src={productImages[selectedImage]} 
                 alt={product.name} 
+                fallbackSrc={getCategoryImage(product.category)}
                 className="max-w-full max-h-[500px] object-contain hover:scale-105 transition-transform duration-500"
               />
             </div>
@@ -119,9 +123,10 @@ export default function ProductDetails() {
                       : 'border-gray-200 hover:border-gray-400'
                   }`}
                 >
-                  <img
+                  <SafeImage
                     src={img}
                     alt={`${product.name} view ${index + 1}`}
+                    fallbackSrc={getCategoryImage(product.category)}
                     className="w-full h-full object-contain"
                   />
                 </button>
